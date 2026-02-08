@@ -1,7 +1,25 @@
-FROM openjdk:11
+# -----------------------
+# BUILD STAGE
+# -----------------------
+FROM maven:3.9-eclipse-temurin-21 AS builder
 
-COPY target/producer*.jar producer.jar
+WORKDIR /build
 
-ENTRYPOINT [ "java","-jar","/producer.jar" ]
+COPY pom.xml .
+RUN mvn dependency:go-offline
+
+COPY src ./src
+RUN mvn package -DskipTests
+
+# -----------------------
+# RUNTIME STAGE
+# -----------------------
+FROM eclipse-temurin:21-jre
+
+WORKDIR /app
+
+COPY --from=builder /build/target/*.jar app.jar
 
 EXPOSE 8080
+
+ENTRYPOINT ["java","-jar","/app/app.jar"]
